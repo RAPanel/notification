@@ -11,33 +11,31 @@ class NotificationComponent extends CApplicationComponent {
 	private $_notifications;
 	public $messagesCategory = 'notification';
 
-	public function getAll($refresh = false) {
-		if(!isset($this->_notifications) || $refresh)
-			$this->_notifications = $this->fetchNotifications();
-		return $this->_notifications;
+	public function getAll($refresh = false, $userId = null) {
+		if($userId === null)
+			$userId = Yii::app()->user->id;
+		if(!isset($this->_notifications[$userId]) || $refresh)
+			$this->_notifications[$userId] = $this->fetchNotifications($userId);
+		return $this->_notifications[$userId];
 	}
 
-	protected function fetchNotifications() {
-		return $this->getScopedModel()->findAll();
+	public function fetchNotifications($userId) {
+		return $this->getScopedModel($userId)->findAll();
 	}
 
-	protected function getScopedModel() {
-		return Notification::model()->all($this->getUserId());
+	protected function getScopedModel($userId) {
+		return Notification::model()->all($userId === null ? Yii::app()->user->id : $userId);
 	}
 
-	protected function getUserId() {
-		return Yii::app()->user->getId();
-	}
-
-	public function getDataProvider($config = array()) {
-		return new CActiveDataProvider($this->getScopedModel(), $config);
+	public function getDataProvider($config = array(), $userId = null) {
+		return new CActiveDataProvider($this->getScopedModel($userId), $config);
 	}
 
 	public function set($type, $text, $params = array(), $userId = null) {
-		Notification::add($type, Yii::t($this->messagesCategory, $text, $params), $userId === null ? $this->getUserId() : $userId);
+		Notification::add($type, Yii::t($this->messagesCategory, $text, $params), $userId === null ? Yii::app()->user->id : $userId);
 	}
 
 	public function replace($type, $text, $params = array(), $userId = null) {
-		Notification::replace($type, Yii::t($this->messagesCategory, $text, $params), $userId === null ? $this->getUserId() : $userId);
+		Notification::replace($type, Yii::t($this->messagesCategory, $text, $params), $userId === null ? Yii::app()->user->id : $userId);
 	}
 }
